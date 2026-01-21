@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>두존구 - 영토 대결판</title>
+    <title>두존구 - 전략적 환경 밸런스</title>
     <style>
         :root {
             --bg-main: #1a1e2e;
@@ -37,6 +37,7 @@
         .token-zone { position: absolute; bottom: 8px; display: flex; gap: 4px; }
         .token { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #222; }
 
+        /* 플레이어별 영토 색상 */
         .p1-land { border-color: var(--red) !important; background: rgba(250, 82, 82, 0.1); }
         .p2-land { border-color: var(--blue) !important; background: rgba(76, 110, 245, 0.1); }
         .p3-land { border-color: var(--green) !important; background: rgba(64, 192, 87, 0.1); }
@@ -45,32 +46,30 @@
         #sidebar { flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 20px; }
         .panel { background: var(--bg-secondary); border-radius: 20px; padding: 20px; }
         
-        .rank-item { background: var(--bg-tertiary); margin-bottom: 10px; padding: 15px; border-radius: 15px; border-left: 5px solid transparent; }
+        .rank-item { background: var(--bg-tertiary); margin-bottom: 10px; padding: 15px; border-radius: 15px; border-left: 5px solid transparent; transition: 0.3s; }
         .rank-item.active { border-left-color: white; transform: scale(1.02); }
-        .score-info { font-size: 12px; color: var(--text-gray); display: flex; gap: 10px; margin-top: 5px; }
+        .rank-item.eliminated { opacity: 0.6; border-left-color: var(--red); background: #3d1c1c; }
+        .score-info { font-size: 12px; color: var(--text-gray); display: flex; flex-direction: column; gap: 2px; margin-top: 5px; }
 
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; }
         .modal-content { background: var(--modal-bg); padding: 30px; border-radius: 25px; width: 95%; max-width: 600px; text-align: center; border: 2px solid var(--red); }
 
-        /* 대결 전용 레이아웃 */
         .battle-layout { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 25px; }
         .battle-player-zone { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .battle-btn { width: 100%; padding: 20px; border-radius: 15px; border: none; color: white; font-weight: 800; cursor: pointer; transition: 0.2s; }
-        .battle-btn:active { transform: scale(0.95); }
         .center-reg-box { flex: 1.5; background: rgba(250, 82, 82, 0.1); padding: 15px; border: 1px dashed var(--red); border-radius: 15px; font-size: 14px; }
 
         .btn-yes { background: #d93025; color: white; width: 100%; padding: 15px; border:none; border-radius: 12px; font-weight:bold; cursor: pointer; margin-top: 15px; }
         .btn-no { background: transparent; color: var(--text-gray); border: 1px solid var(--text-gray); width: 100%; padding: 10px; border-radius: 12px; margin-top: 10px; cursor: pointer; }
 
         #ending { display: none; position: fixed; inset: 0; background: black; z-index: 1000; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 20px; }
-        .ending-img { width: 300px; border-radius: 15px; margin: 20px; }
     </style>
 </head>
 <body>
 
     <div id="start-screen" style="text-align: center; max-width: 500px;">
         <h1 style="font-size: 50px; margin-bottom: 10px;">🌍 두존구</h1>
-        <p style="color:var(--text-gray)">모든 플레이어는 중국(0)에서 출발합니다.</p>
+        <p style="color:var(--text-gray)">가장 많은 땅을 가진(개발점수 1위) 플레이어는 탈락합니다!<br>현명하게 개발하고 영토를 방어하세요.</p>
         <button onclick="startGame()" style="width:100%; padding:20px; font-size:20px; background:var(--red); color:white; border:none; border-radius:15px; cursor:pointer; font-weight:bold;">게임 시작</button>
     </div>
 
@@ -80,7 +79,11 @@
         <div class="game-container">
             <div id="board-grid"></div>
             <div id="sidebar">
-                <div class="panel"><h3>📊 실시간 통합 순위</h3><div id="rank-list"></div></div>
+                <div class="panel">
+                    <h3>📊 실시간 순위</h3>
+                    <p style="font-size:11px; color:var(--text-gray); margin-bottom:10px;">*개발점수 1위는 자동 탈락 (발전점수 무관)</p>
+                    <div id="rank-list"></div>
+                </div>
                 <div class="panel" style="text-align:center">
                     <h3 id="turn-txt">차례</h3><div id="dice-val" style="font-size: 50px; margin: 10px;">🎲</div>
                     <button id="roll-btn" onclick="rollDice()" style="width:100%; padding:15px; border-radius:10px; background:var(--blue); color:white; border:none; font-weight:bold; cursor:pointer;">주사위 던지기</button>
@@ -99,51 +102,50 @@
                 <p><strong>⚠️ 규제:</strong> <span id="g-modal-reg"></span></p>
                 <p><strong>⚡ 영향:</strong> <span id="g-modal-warn"></span></p>
             </div>
-            <button class="btn-yes" onclick="decide(true)">이 곳을 개발하겠습니다</button>
-            <button class="btn-no" onclick="decide(false)">보존하겠습니다</button>
+            <button class="btn-yes" onclick="decide(true)">이 곳을 개발 (개발+1)</button>
+            <button class="btn-no" onclick="decide(false)">보존하기</button>
         </div>
     </div>
 
     <div id="battle-modal" class="modal-overlay">
-        <div class="modal-content" style="border-color: var(--yellow); max-width: 700px;">
-            <h2 style="color:var(--yellow); margin:0;">⚔️ 영토 쟁탈 대결 ⚔️</h2>
-            <p style="margin-top:5px; color:#aaa;">먼저 클릭하는 쪽이 승리 확률이 높습니다!</p>
-            
+        <div class="modal-content" style="border-color: var(--yellow); max-width: 750px;">
+            <h2 style="color:var(--yellow); margin:0;">⚔️ 규제 암기 대결 ⚔️</h2>
             <div class="battle-layout">
                 <div class="battle-player-zone">
-                    <div style="font-size:12px; color:var(--text-gray)">소유한 플레이어</div>
+                    <div style="font-size:12px; color:var(--text-gray)">기존 소유자</div>
                     <div id="owner-name" style="font-weight:bold; font-size:18px;"></div>
-                    <button id="owner-btn" class="battle-btn" onclick="processBattle('owner')">방어하기!</button>
+                    <button id="owner-btn" class="battle-btn" onclick="processBattle('owner')">방어 승리!</button>
                 </div>
 
                 <div class="center-reg-box">
                     <div id="battle-country" style="font-weight:bold; font-size:18px; margin-bottom:10px;"></div>
-                    <div id="battle-reg" style="font-size:13px; color:#eee;"></div>
+                    <div id="battle-reg" style="font-size:15px; color:#fff; font-weight:bold; background:rgba(0,0,0,0.3); padding:10px; border-radius:10px;"></div>
+                    <p style="font-size:11px; margin-top:10px;">승리 시 발전점수 상승 및 개발점수 관리 가능</p>
                 </div>
 
                 <div class="battle-player-zone">
-                    <div style="font-size:12px; color:var(--text-gray)">침입한 플레이어</div>
+                    <div style="font-size:12px; color:var(--text-gray)">새로운 침입자</div>
                     <div id="attacker-name" style="font-weight:bold; font-size:18px;"></div>
-                    <button id="attacker-btn" class="battle-btn" onclick="processBattle('attacker')">공격하기!</button>
+                    <button id="attacker-btn" class="battle-btn" onclick="processBattle('attacker')">공격 승리!</button>
                 </div>
             </div>
 
-            <div id="battle-result-txt" style="margin-top:20px; font-size:18px; font-weight:bold; min-height:50px;"></div>
+            <div id="battle-result-txt" style="margin-top:20px; font-size:15px; min-height:80px; padding:10px; background:rgba(255,255,255,0.05); border-radius:10px;"></div>
             <button id="battle-close-btn" class="btn-no" style="display:none; border-color:var(--yellow); color:var(--yellow);" onclick="closeBattle()">결과 확인 완료</button>
         </div>
     </div>
 
     <div id="ending">
         <div id="ending-content"></div>
-        <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; cursor:pointer">처음으로</button>
+        <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; cursor:pointer">다시 하기</button>
     </div>
 
     <script>
         const players = [
-            { id: 1, name: "플레이어 1", color: "#fa5252", pos: 0, devScore: 0, advScore: 0, totalScore: 0, lands: [], css: "p1-land" },
-            { id: 2, name: "플레이어 2", color: "#4c6ef5", pos: 0, devScore: 0, advScore: 0, totalScore: 0, lands: [], css: "p2-land" },
-            { id: 3, name: "플레이어 3", color: "#40c057", pos: 0, devScore: 0, advScore: 0, totalScore: 0, lands: [], css: "p3-land" },
-            { id: 4, name: "플레이어 4", color: "#be4bdb", pos: 0, devScore: 0, advScore: 0, totalScore: 0, lands: [], css: "p4-land" }
+            { id: 1, name: "플레이어 1", color: "#fa5252", pos: 0, devScore: 0, advScore: 0, css: "p1-land" },
+            { id: 2, name: "플레이어 2", color: "#4c6ef5", pos: 0, devScore: 0, advScore: 0, css: "p2-land" },
+            { id: 3, name: "플레이어 3", color: "#40c057", pos: 0, devScore: 0, advScore: 0, css: "p3-land" },
+            { id: 4, name: "플레이어 4", color: "#be4bdb", pos: 0, devScore: 0, advScore: 0, css: "p4-land" }
         ];
 
         const mapData = [
@@ -202,17 +204,28 @@
         }
 
         function updateRank() {
-            players.forEach(p => p.totalScore = p.devScore + p.advScore);
-            const sorted = [...players].sort((a,b) => b.totalScore - a.totalScore);
+            // 개발점수 1위 찾기
+            const maxDev = Math.max(...players.map(p => p.devScore));
+            
+            // 발전점수순 정렬
+            const sorted = [...players].sort((a,b) => b.advScore - a.advScore);
             const list = document.getElementById('rank-list'); list.innerHTML = "";
-            sorted.forEach((p, idx) => {
-                list.innerHTML += `<div class="rank-item ${p.id===players[turn].id?'active':''}">
+
+            sorted.forEach((p) => {
+                const isEliminated = (maxDev > 0 && p.devScore === maxDev);
+                list.innerHTML += `
+                <div class="rank-item ${p.id===players[turn].id?'active':''} ${isEliminated?'eliminated':''}">
                     <div style="font-weight:bold; display:flex; justify-content:space-between;">
-                        <span>${idx+1}위 ${p.name}</span><span>${p.totalScore}점</span>
+                        <span>${isEliminated ? '💀 탈락' : '🏆'} ${p.name}</span>
+                        <span>발전: ${p.advScore.toFixed(1)}점</span>
                     </div>
-                    <div class="score-info"><span>🛠 개발:${p.devScore}</span><span>⚡ 발전:${p.advScore}</span></div>
+                    <div class="score-info">
+                        <span>• 개발점수(땅 개수): ${p.devScore}</span>
+                        <span style="color:var(--text-gray)">${isEliminated ? '<b>[과잉 개발 1위로 탈락!]</b>' : ''}</span>
+                    </div>
                 </div>`;
             });
+
             document.getElementById('turn-txt').innerText = `${players[turn].name}의 차례`;
             document.getElementById('turn-txt').style.color = players[turn].color;
         }
@@ -233,7 +246,7 @@
             }, 600);
         }
 
-        // --- 배틀 로직 ---
+        // --- 배틀 로직 (암기 대결) ---
         let currentBattleInfo = null;
         function openBattleModal(owner, attacker, idx) {
             currentBattleInfo = { owner, attacker, idx };
@@ -242,34 +255,48 @@
             document.getElementById('attacker-name').innerText = attacker.name;
             document.getElementById('attacker-btn').style.backgroundColor = attacker.color;
             document.getElementById('battle-country').innerText = `${mapData[idx].flag} ${mapData[idx].name}`;
-            document.getElementById('battle-reg').innerText = `규제: ${mapData[idx].reg}`;
+            document.getElementById('battle-reg').innerText = mapData[idx].reg;
             
-            document.getElementById('battle-result-txt').innerText = "전투 준비! 버튼을 누르세요!";
+            document.getElementById('battle-result-txt').innerText = "규제를 확인하세요! 누가 이겼습니까?";
             document.getElementById('battle-close-btn').style.display = 'none';
             document.getElementById('owner-btn').disabled = false;
             document.getElementById('attacker-btn').disabled = false;
             document.getElementById('battle-modal').style.display = 'flex';
         }
 
-        function processBattle(clickedRole) {
+        function processBattle(winnerRole) {
             document.getElementById('owner-btn').disabled = true;
             document.getElementById('attacker-btn').disabled = true;
             
             const { owner, attacker, idx } = currentBattleInfo;
-            const isOwnerWin = (clickedRole === 'owner') ? Math.random() < 0.7 : Math.random() < 0.3; // 클릭한 쪽이 확률 높음
-
             const resTxt = document.getElementById('battle-result-txt');
-            if (isOwnerWin) {
-                resTxt.innerHTML = `<span style="color:var(--green)">🏆 ${owner.name} 방어 성공!</span><br><span style="font-size:14px;">소유자 +0.5 / 침입자 -0.5</span>`;
-                owner.advScore += 0.5; attacker.advScore -= 0.5;
+
+            if (winnerRole === 'owner') {
+                // 기존 소유자 승리 로직 (방어 성공)
+                // 소유자: +0.5(발전) -1(개발) / 침입자: -0.5(발전) +1(개발)
+                owner.advScore += 0.5;
+                owner.devScore = Math.max(0, owner.devScore - 1);
+                attacker.advScore -= 0.5;
+                attacker.devScore += 1;
+
+                resTxt.innerHTML = `<b style="color:var(--green)">🛡️ 방어 성공!</b><br>
+                ${owner.name}: 발전 +0.5 / 개발 -1 (안전해짐)<br>
+                ${attacker.name}: 발전 -0.5 / 개발 +1 (탈락 위험 증가)`;
             } else {
-                resTxt.innerHTML = `<span style="color:var(--red)">🔥 ${attacker.name} 쟁탈 성공!</span><br><span style="font-size:14px;">소유자 -0.5 / 침입자 +0.5 / 영토 교체</span>`;
-                owner.advScore -= 0.5; owner.devScore -= 1;
-                attacker.advScore += 0.5; attacker.devScore += 1;
+                // 침입자 승리 로직 (공격 성공)
+                // 소유자: -0.5(발전) +0(개발) / 침입자: +0.5(발전) +0(개발)
+                owner.advScore -= 0.5;
+                attacker.advScore += 0.5;
+                // 공격 성공 시 침입자는 땅을 뺏지만 '개발점수'는 증가하지 않음 (0)
+                // 기존 주인은 땅을 잃었지만 '개발점수'는 그대로임 (0)
+                
                 boardOwner[idx] = attacker;
                 const tile = document.getElementById(`tile-${idx}`);
                 tile.className = `tile ${attacker.css}`;
-                tile.querySelector('.name').innerHTML = `${mapData[idx].name}<br><span style="color:${attacker.color}; font-size:10px;">(뺏김)</span>`;
+
+                resTxt.innerHTML = `<b style="color:var(--red)">⚔️ 공격 승리! 소유권 이전!</b><br>
+                ${owner.name}: 발전 -0.5 / 개발 변동없음<br>
+                ${attacker.name}: 발전 +0.5 / 개발 변동없음 (영토 획득)`;
             }
             document.getElementById('battle-close-btn').style.display = 'block';
         }
@@ -279,14 +306,14 @@
             nextTurn();
         }
 
-        // --- 개발 로직 ---
+        // --- 신규 개발 ---
         let currentLandIdx = -1;
         function openModal(idx) {
             currentLandIdx = idx; const data = mapData[idx];
             document.getElementById('g-modal-flag').innerText = data.flag;
             document.getElementById('g-modal-title').innerText = data.name;
             document.getElementById('g-modal-adv-info').innerText = `발전점수 +${data.point}`;
-            document.getElementById('g-modal-msg').innerText = `${players[turn].name}님, 개발하시겠습니까?`;
+            document.getElementById('g-modal-msg').innerText = `${players[turn].name}님, 개발하시겠습니까? (개발 시 개발점수 +1)`;
             document.getElementById('g-modal-reg').innerText = data.reg;
             document.getElementById('g-modal-warn').innerText = data.warn;
             document.getElementById('game-modal').style.display = 'flex';
@@ -296,10 +323,11 @@
             document.getElementById('game-modal').style.display = 'none';
             if (isYes) {
                 const p = players[turn]; const land = mapData[currentLandIdx];
-                boardOwner[currentLandIdx] = p; p.devScore += 1; p.advScore += land.point;
+                boardOwner[currentLandIdx] = p; 
+                p.devScore += 1; // 신규 개발 시 무조건 +1
+                p.advScore += land.point; // 개도국 +2, 선진국 +1
                 const tile = document.getElementById(`tile-${currentLandIdx}`);
                 tile.classList.add(p.css);
-                tile.querySelector('.name').innerHTML += `<br><span style="color:${p.color}; font-size:10px;">(개발됨)</span>`;
             }
             nextTurn();
         }
@@ -316,11 +344,20 @@
 
         function showEnding() {
             const end = document.getElementById('ending');
-            const totalLands = boardOwner.filter(x => x !== null).length;
-            const winner = [...players].sort((a,b) => b.totalScore - a.totalScore)[0];
-            let html = totalLands === 0 ? 
-                `<h1>🌿 HAPPY ENDING</h1><img src="good.jpeg" class="ending-img"><p>지구가 보존되었습니다!</p>` :
-                `<h1>💀 BAD ENDING</h1><img src="bad.jpeg" class="ending-img"><p>우승: <b style="color:${winner.color}">${winner.name}</b> (${winner.totalScore}점)</p><p style="color:var(--red)">총 ${totalLands}개 지역 파괴</p>`;
+            const maxDev = Math.max(...players.map(p => p.devScore));
+            
+            // 개발 1위 제외
+            const nonEliminated = players.filter(p => p.devScore < maxDev || maxDev === 0);
+            const winner = nonEliminated.sort((a,b) => b.advScore - a.advScore)[0];
+
+            let html = `<h1>🎮 게임 종료</h1>`;
+            if (!winner) {
+                html += `<p>모두가 공동 파괴범으로 탈락했습니다.</p>`;
+            } else {
+                html += `<h2>최종 우승: <span style="color:${winner.color}">${winner.name}</span></h2>
+                         <p>발전 점수: ${winner.advScore}점</p>
+                         <p style="font-size:14px; color:var(--text-gray)">과도한 개발을 피한 현명한 승리입니다!</p>`;
+            }
             document.getElementById('ending-content').innerHTML = html;
             end.style.display = 'flex';
         }
