@@ -698,24 +698,36 @@
         
             document.getElementById('mini-game-modal').style.display = 'flex';
         }
-        
+
         function resolveMiniGame(owner, attacker, isOwnerWin) {
             if (isOwnerWin) {
-                // 1. 기존 소유자 승리 시
-                owner.devScore += 0.5; // 발전 +0.5
-                owner.score -= 1;      // 개발 -1
+                // --- 1. 기존 소유자 승리 시 (땅을 침입자에게 떠넘김) ---
+                owner.devScore += 0.5;   // 승리 보상 발전 점수
+                owner.score -= 1;        // 개발 점수(패배 스택) 감소 (성공!)
                 
-                attacker.devScore -= 0.5; // 패배자 발전 -0.5
-                attacker.score += 1;      // 패배자 개발 +1
-                alert(`소유자 ${owner.name} 승리! 규제를 잘 지켜 보상을 얻고 개발 지수를 낮췄습니다.`);
+                attacker.devScore -= 0.5; // 패배 감점
+                attacker.score += 1;      // 땅을 강제로 떠맡음 (개발 점수 증가)
+        
+                // [소유권 이전 로직]
+                boardOwner[currentLandIdx] = attacker.id; // 땅 주인 변경
+                
+                // [시각적 업데이트]
+                const tile = document.getElementById(`tile-${currentLandIdx}`);
+                // 기존 클래스 제거 (p1-land, p2-land 등 모두 제거)
+                tile.classList.remove('p1-land', 'p2-land', 'p3-land', 'p4-land');
+                // 새 주인 클래스 추가
+                tile.classList.add(attacker.css);
+                // 텍스트 업데이트
+                tile.querySelector('.name').innerHTML = `${mapData[currentLandIdx].name}<br><span style='color:${attacker.color}; font-size:12px;'>(소유권 이전)</span>`;
+        
+                alert(`🎊 ${owner.name} 승리! 규제를 완벽히 준수하여 ${attacker.name}에게 개발권을 넘겼습니다!`);
+        
             } else {
-                // 2. 침입자 승리 시
-                owner.devScore -= 0.5; // 패배자 발전 -0.5
-                owner.score += 0;      // 개발 변동없음 (+0)
+                // --- 2. 침입자 승리 시 (서로 개발 점수 변동 없음, 발전 점수만 획득) ---
+                owner.devScore -= 0.5; // 소유자 패배 감점
+                attacker.devScore += 0.5; // 침입자 승리 발전 점수 획득
                 
-                attacker.devScore += 0.5; // 승리자 발전 +0.5
-                attacker.score += 0;      // 개발 변동없음 (+0)
-                alert(`침입자 ${attacker.name} 승리! 개발권을 방어하지 못해 점수가 변동되었습니다.`);
+                alert(`🎊 ${attacker.name} 승리! 규제 싸움에서 이겨 발전 점수를 획득했습니다. (소유권 변동 없음)`);
             }
         
             document.getElementById('mini-game-modal').style.display = 'none';
