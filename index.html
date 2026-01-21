@@ -133,7 +133,7 @@
         #sidebar { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 25px; }
         .panel { background: var(--bg-secondary); border-radius: 20px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 
-        .rank-item { display: flex; align-items: center; background: var(--bg-tertiary); margin-bottom: 12px; padding: 12px 15px; border-radius: 15px; border-left: 6px solid transparent; transition: 0.3s; }
+        .rank-item { display: flex; align-items: center; background: var(--bg-tertiary); margin-bottom: 8px; padding: 10px 15px; border-radius: 15px; border-left: 6px solid transparent; transition: 0.3s; }
         .rank-item.active { border-left-color: var(--text-white); background: #3b4259; transform: scale(1.02); }
         .rank-info span { letter-spacing: -0.5px; }
         
@@ -267,6 +267,14 @@
                 <div class="panel">
                     <h3>📊 실시간 순위</h3>
                     <div id="rank-list"></div>
+                </div>
+
+                <div class="panel">
+                    <h3 style="color:var(--red); font-size:16px; margin-bottom:10px;">💀 파괴 순위 (개발 횟수)</h3>
+                    <div id="rank-list-destroy" style="margin-bottom:25px;"></div>
+                    
+                    <h3 style="color:var(--yellow); font-size:16px; margin-bottom:10px;">🏆 발전 순위 (P 점수)</h3>
+                    <div id="rank-list-power"></div>
                 </div>
 
                 <div class="panel control-box">
@@ -541,57 +549,47 @@
         }
 
         function updateRank() {
-            const list = document.getElementById('rank-list');
-            list.innerHTML = "";
+            const destroyList = document.getElementById('rank-list-destroy');
+            const powerList = document.getElementById('rank-list-power');
+            
+            destroyList.innerHTML = "";
+            powerList.innerHTML = "";
         
-            // 1. 정렬 기준: 개발을 많이 한 순서 (Bad Ending에 가까운 순)
-            let sorted = [...players].sort((a, b) => b.score - a.score || a.id - b.id);
-        
-            // 최고 점수 계산 (아이콘 표시용)
-            const maxScore = Math.max(...players.map(p => p.score));
-            const maxDevScore = Math.max(...players.map(p => p.devScore));
-        
-            sorted.forEach((p, idx) => {
+            // --- 1. 파괴(개발) 순위 생성 (개발 많이 한 순) ---
+            let sortedByDestroy = [...players].sort((a, b) => b.score - a.score);
+            sortedByDestroy.forEach((p, idx) => {
                 const isActive = (p.id === players[turn].id);
-                const div = document.createElement('div');
-                div.className = `rank-item ${isActive ? 'active' : ''}`;
-                
-                // 조건별 이모티콘 설정
-                const isWarning = p.score > 0 && p.score === maxScore; // 개발 점수 1등 (경고)
-                const isTopDev = p.devScore > 0 && p.devScore === maxDevScore; // 발전 점수 1등 (트로피)
-        
-                div.innerHTML = `
-                    <div class="rank-num" style="color:${p.color}">${idx + 1}</div>
-                    <div class="rank-info">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                            <span style="font-size:16px; font-weight:bold;">
-                                ${isWarning ? '⚠️ ' : ''}${p.name}
-                            </span>
-                            <span style="color:var(--red); font-weight:800; font-size:14px; opacity:0.9;">
-                                개발 ${p.score}개
-                            </span>
+                destroyList.innerHTML += `
+                    <div class="rank-item ${isActive ? 'active' : ''}" style="margin-bottom:8px; padding:8px 12px;">
+                        <div class="rank-num" style="width:25px; height:25px; font-size:14px;">${idx + 1}</div>
+                        <div style="flex:1; display:flex; justify-content:space-between;">
+                            <span style="font-weight:bold; color:${p.color}">${p.name}</span>
+                            <span style="color:var(--red)">${p.score}회 개발</span>
                         </div>
-                        
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div class="rank-bar-bg" style="flex:1; margin-top:0; margin-right:15px;">
-                                <div class="rank-bar-fill" style="width:${Math.min(p.score * 20, 100)}%; background:${p.color}"></div>
-                            </div>
-                            <span style="color:var(--yellow); font-size:14px; font-weight:bold; min-width:70px; text-align:right;">
-                                ${isTopDev ? '🏆 ' : ''}+${p.devScore}P
-                            </span>
-                        </div>
-                    </div>
-                `;
-                list.appendChild(div);
+                    </div>`;
             });
         
-            // 현재 차례 텍스트 업데이트
+            // --- 2. 발전(P) 순위 생성 (P점수 높은 순) ---
+            let sortedByPower = [...players].sort((a, b) => b.devScore - a.devScore);
+            sortedByPower.forEach((p, idx) => {
+                const isActive = (p.id === players[turn].id);
+                powerList.innerHTML += `
+                    <div class="rank-item ${isActive ? 'active' : ''}" style="margin-bottom:8px; padding:8px 12px;">
+                        <div class="rank-num" style="width:25px; height:25px; font-size:14px;">${idx + 1}</div>
+                        <div style="flex:1; display:flex; justify-content:space-between;">
+                            <span style="font-weight:bold; color:${p.color}">${p.name}</span>
+                            <span style="color:var(--yellow)">${p.devScore} P</span>
+                        </div>
+                    </div>`;
+            });
+        
+            // 현재 차례 텍스트 업데이트 (기존과 동일)
             const turnP = players[turn];
             const txt = document.getElementById('turn-txt');
             txt.innerText = `${turnP.name}의 차례`;
             txt.style.color = turnP.color;
         }
-
+        
         function rollDice() {
             const btn = document.getElementById('roll-btn');
             const diceDiv = document.getElementById('dice-val');
