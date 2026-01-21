@@ -200,6 +200,23 @@
         @keyframes blink { 50% { opacity: 0.5; } }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .shake-effect {
+            animation: shake 0.5s; /* 0.5초 동안 한 번 실행 */
+        }
     </style>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
 </head>
@@ -526,31 +543,40 @@
         function updateRank() {
             const list = document.getElementById('rank-list');
             list.innerHTML = "";
-
-    // 1. 순위 정렬 기준: 개발을 많이 한 순서 (Bad Ending에 가까운 순)
-            let sorted = [...players].sort((a, b) => b.score - a.score || a.id - b.id);
-
-            sorted.forEach((p, idx) => {
-            const isActive = (p.id === players[turn].id);
-            const div = document.createElement('div');
-            div.className = `rank-item ${isActive ? 'active' : ''}`;
         
-        // 발전 점수가 가장 높은 사람을 찾기 위한 로직 (보너스 표시용)
-            const isTopDev = p.devScore > 0 && p.devScore === Math.max(...players.map(pl => pl.devScore));
-
+            // 1. 정렬 기준: 개발을 많이 한 순서 (Bad Ending에 가까운 순)
+            let sorted = [...players].sort((a, b) => b.score - a.score || a.id - b.id);
+        
+            // 최고 점수 계산 (아이콘 표시용)
+            const maxScore = Math.max(...players.map(p => p.score));
+            const maxDevScore = Math.max(...players.map(p => p.devScore));
+        
+            sorted.forEach((p, idx) => {
+                const isActive = (p.id === players[turn].id);
+                const div = document.createElement('div');
+                div.className = `rank-item ${isActive ? 'active' : ''}`;
+                
+                // 조건별 이모티콘 설정
+                const isWarning = p.score > 0 && p.score === maxScore; // 개발 점수 1등 (경고)
+                const isTopDev = p.devScore > 0 && p.devScore === maxDevScore; // 발전 점수 1등 (트로피)
+        
                 div.innerHTML = `
                     <div class="rank-num" style="color:${p.color}">${idx + 1}</div>
                     <div class="rank-info">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                            <span style="font-size:16px; font-weight:bold;">${p.name}</span>
-                            <span style="color:${p.color}; font-weight:800; font-size:15px;">개발 ${p.score}개</span>
+                            <span style="font-size:16px; font-weight:bold;">
+                                ${isWarning ? '⚠️ ' : ''}${p.name}
+                            </span>
+                            <span style="color:var(--red); font-weight:800; font-size:14px; opacity:0.9;">
+                                개발 ${p.score}개
+                            </span>
                         </div>
                         
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div class="rank-bar-bg" style="flex:1; margin-top:0; margin-right:10px;">
-                                <div class="rank-bar-fill" style="width:${Math.min(p.score * 12, 100)}%; background:${p.color}"></div>
+                            <div class="rank-bar-bg" style="flex:1; margin-top:0; margin-right:15px;">
+                                <div class="rank-bar-fill" style="width:${Math.min(p.score * 20, 100)}%; background:${p.color}"></div>
                             </div>
-                            <span style="color:var(--yellow); font-size:13px; font-weight:bold; min-width:60px; text-align:right;">
+                            <span style="color:var(--yellow); font-size:14px; font-weight:bold; min-width:70px; text-align:right;">
                                 ${isTopDev ? '🏆 ' : ''}+${p.devScore}P
                             </span>
                         </div>
@@ -558,15 +584,13 @@
                 `;
                 list.appendChild(div);
             });
-
-    // 현재 차례 표시
+        
+            // 현재 차례 텍스트 업데이트
             const turnP = players[turn];
             const txt = document.getElementById('turn-txt');
             txt.innerText = `${turnP.name}의 차례`;
             txt.style.color = turnP.color;
         }
-        
-
 
         function rollDice() {
             const btn = document.getElementById('roll-btn');
@@ -624,13 +648,19 @@
         function decide(develop) {
             document.getElementById('game-modal').style.display = 'none';
             const p = players[turn];
-            const land = mapData[currentLandIdx]; // 현재 땅 데이터 가져오기
-
-            if(develop) {
-                boardOwner[currentLandIdx] = p.id;
-                p.score++; // 개발 개수 +1
-                p.devScore += land.devValue; // 해당 국가의 발전 점수 합산 (+1P 또는 +2P)
+            const land = mapData[currentLandIdx];
         
+            if(develop) {
+                // 화면 흔들림 효과 적용
+                document.body.classList.add('shake-effect');
+                setTimeout(() => {
+                    document.body.classList.remove('shake-effect');
+                }, 500);
+        
+                boardOwner[currentLandIdx] = p.id;
+                p.score++; // 개발 개수 (파괴 점수)
+                p.devScore += land.devValue; // 발전 점수
+                
                 p.lands.push(land.name);
                 const tile = document.getElementById(`tile-${currentLandIdx}`);
                 tile.classList.add(p.css);
