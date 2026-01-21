@@ -659,9 +659,15 @@
         function openGameModal(idx) {
             currentLandIdx = idx;
             const data = mapData[idx];
-            document.getElementById('m-modal-flag').innerText = data.flag; // ID는 HTML 구조에 맞게 조정
-            document.getElementById('m-modal-title').innerText = data.name;
-            // ... 모달에 데이터를 넣고 display = 'flex' 하는 로직
+            
+            // 일반 개발 모달(game-modal) 내부의 엘리먼트 ID로 수정
+            document.getElementById('g-modal-flag').innerText = data.flag;
+            document.getElementById('g-modal-title').innerText = data.name;
+            document.getElementById('g-modal-arrival-msg').innerText = `${players[turn].name}이(가) 도착했습니다`;
+            document.getElementById('g-modal-warning').innerText = data.warning;
+            document.getElementById('g-modal-regulation').innerText = data.regulation;
+        
+            // 모달 표시
             document.getElementById('game-modal').style.display = 'flex';
         }
         
