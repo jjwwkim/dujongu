@@ -257,7 +257,7 @@
     <div id="game-ui">
         <header>
             <h1>🌍 두존구 🌍</h1>
-            <div class="round-badge" id="round-txt">ROUND 1 / 3</div>
+            <div class="round-badge" id="round-txt">ROUND 1 / 6</div>
         </header>
 
         <div class="game-container">
@@ -272,7 +272,7 @@
                     <h4 style="color:var(--red); font-size:13px; margin: 5px 0 10px 5px;">💀 파괴 순위 (개발 횟수)</h4>
                     <div id="rank-list-destroy"></div>
                     
-                    <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0;"></div> <h4 style="color:var(--yellow); font-size:13px; margin: 5px 0 10px 5px;">🏆 발전 순위 (ESG P점수)</h4>
+                    <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0;"></div> <h4 style="color:var(--yellow); font-size:13px; margin: 5px 0 10px 5px;">🏆 발전 순위 (ESG)</h4>
                     <div id="rank-list-power"></div>
                 </div>
             
@@ -520,7 +520,7 @@
 
         let turn = 0; 
         let round = 1;
-        const maxRound = 3;
+        const maxRound = 6;
         let boardOwner = new Array(16).fill(0);
 
         function startGame() {
@@ -796,83 +796,83 @@
             document.getElementById('dice-val').innerText = "🎲";
         }    
 
-                function gameOver() {
-                    const ending = document.getElementById('ending');
-                    const endingContent = document.getElementById('ending-content');
+        function gameOver() {
+            const ending = document.getElementById('ending');
+            const endingContent = document.getElementById('ending-content');
+            
+            let allDestroyedLands = [];
+            players.forEach(p => allDestroyedLands.push(...p.lands));
+            const totalDevCount = allDestroyedLands.length;
+        
+            let html = "";
+        
+            // --- [CASE 1] HAPPY ENDING (0~1회) ---
+            if (totalDevCount <= 1) {
+                html += `<h1 style='color:var(--green); font-size:40px; margin-bottom:20px;'>🎉 HAPPY ENDING 🎉</h1>`;
+                html += `<img src="good.jpeg" class="ending-img" alt="아름다운 지구">`;
+                html += `<h2 style='color:white;'>지구는 안전합니다.</h2>`;
+                html += `<p style='color:#ccc;'>지구 도움 많이 된다.</p>`;
+            } 
+            // --- [CASE 2] BAD ENDING (15~16회) ---
+            else if (totalDevCount >= 15) {
+                html += `<h1 style='color:var(--red); font-size:40px; margin-bottom:20px;'>💀 BAD ENDING 💀</h1>`;
+                html += `<img src="bad.jpeg" class="ending-img" alt="파괴된 지구">`;
+                html += `<h2 style='color:white;'>지구가 파괴되었습니다.</h2>`;
+                html += `<p style="color:var(--red); font-weight:bold;">[ ${allDestroyedLands.join(', ')} ]</p>`;
+                html += `<p style="color:white;">지구 스트레스 많이 받을거야.</p>`;
+            } 
+            // --- [CASE 3] NORMAL ENDING (2~14회) : 직접 계산 모드 ---
+            else {
+                html += `<h1 style='color:var(--yellow); font-size:35px; margin-bottom:30px;'>📊 최종 통계 데이터 📊</h1>`;
+                
+                // 실시간 순위표 데이터 복사 (정렬)
+                let sortedByDestroy = [...players].sort((a, b) => b.score - a.score);
+                let sortedByPower = [...players].sort((a, b) => b.devScore - a.devScore);
+                const maxScore = Math.max(...players.map(p => p.score));
+        
+                html += `
+                <div style="display: flex; gap: 20px; width: 95%; max-width: 1000px; align-items: stretch;">
                     
-                    // 1. 모든 플레이어가 개발한 총 횟수 계산
-                    let allDestroyedLands = [];
-                    players.forEach(p => allDestroyedLands.push(...p.lands));
-                    const totalDevCount = allDestroyedLands.length;
-        
-                    let html = "";
-        
-                    // --- [CASE 1] HAPPY ENDING (총 개발 0~1회) ---
-                    if (totalDevCount <= 1) {
-                        html += `<h1 style='color:var(--green); font-size:40px; margin-bottom:20px;'>🎉 HAPPY ENDING 🎉</h1>`;
-                        html += `<img src="good.jpeg" class="ending-img" alt="아름다운 지구">`;
-                        html += `<h2 style='color:white;'>지구는 안전합니다.</h2>`;
-                        html += `<p style='color:#ccc; line-height:1.6;'>개발보다는 보존을 선택한 당신들 덕분에<br>지구가 본래의 아름다움을 유지할 수 있게 되었습니다.<br>지구 도움 많이 된다.</p>`;
-                    } 
-                    
-                    // --- [CASE 2] BAD ENDING (총 개발 15~16회) ---
-                    else if (totalDevCount >= 15) {
-                        html += `<h1 style='color:var(--red); font-size:40px; margin-bottom:20px;'>💀 BAD ENDING 💀</h1>`;
-                        html += `<img src="bad.jpeg" class="ending-img" alt="파괴된 지구">`;
-                        html += `<h2 style='color:white;'>지구가 파괴되었습니다.</h2>`;
-                        html += `<p style="color:var(--red); font-weight:bold; font-size:16px; margin: 15px 0;">[ ${allDestroyedLands.join(', ')} ]</p>`;
-                        html += `<p style="color:white; line-height:1.6;">모든 땅이 무분별하게 개발되었습니다.<br>인간의 욕심이 생태계의 한계를 넘어섰고,<br>이제 우리는 더 이상 돌아갈 곳이 없습니다.<br>지구 스트레스 많이 받을거야.</p>`;
-                    } 
-                    
-                    // --- [CASE 3] NORMAL ENDING (총 개발 2~14회) : 정밀 순위 산정 ---
-                    else {
-                        html += `<h1 style='color:var(--yellow); font-size:35px; margin-bottom:20px;'>📊 최종 결과 발표 📊</h1>`;
-                        html += `<p style="color:#aaa; margin-bottom:25px;">치열했던 개발과 보존의 기록입니다.</p>`;
-        
-                        // 순위 산정 로직
-                        // 1. 개발점수(score)가 가장 높은 사람(파괴왕) 찾기
-                        let maxScore = Math.max(...players.map(p => p.score));
-                        
-                        // 2. 플레이어 정렬
-                        let rankedPlayers = [...players].sort((a, b) => {
-                            // 조건 1: 개발 점수가 maxScore인 사람은 무조건 뒤로 (자동 4등)
-                            const aIsMax = a.score === maxScore;
-                            const bIsMax = b.score === maxScore;
-                            if (aIsMax && !bIsMax) return 1;
-                            if (!aIsMax && bIsMax) return -1;
-                            
-                            // 조건 2: 개발 점수가 낮은 순서대로 (환경 보호 우선)
-                            if (a.score !== b.score) {
-                                return a.score - b.score;
-                            }
-                            // 조건 3: 개발 점수가 같다면 발전 점수(devScore)가 높은 순서대로
-                            return b.devScore - a.devScore;
-                        });
-        
-                        html += `<div style="background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; width:90%; max-width:500px; margin: 0 auto;">`;
-                        rankedPlayers.forEach((p, idx) => {
-                            const isLast = p.score === maxScore;
-                            const rankText = isLast ? "💀 파괴왕" : `${idx + 1}위`;
-                            const color = isLast ? "var(--red)" : "white";
-        
-                            html += `
-                                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #333; color:${color}">
-                                    <span style="font-weight:bold; width:60px; text-align:left;">${rankText}</span>
-                                    <span style="color:${p.color}; font-weight:bold; flex:1; text-align:left; margin-left:10px;">${p.name}</span>
-                                    <div style="text-align:right; font-size:13px;">
-                                        <span>개발: ${p.score}</span> / 
-                                        <span style="color:var(--yellow)">발전: ${p.devScore}P</span>
-                                    </div>
+                    <div style="flex: 2; display: flex; gap: 15px;">
+                        <div style="flex: 1; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid #444;">
+                            <h4 style="color:var(--red); margin-bottom:15px; font-size:14px;">💀 파괴 기록</h4>
+                            ${sortedByDestroy.map((p, idx) => `
+                                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px; color:${p.score === maxScore ? 'var(--red)' : 'white'}">
+                                    <span>${p.score === maxScore ? '💀' : idx+1+'.'} ${p.name}</span>
+                                    <span>${p.score}회</span>
                                 </div>
-                            `;
-                        });
-                        html += `</div>`;
-                        html += `<p style="margin-top:30px; color:#888; font-size:14px;">총 ${totalDevCount}개의 지역이 개발되었습니다.</p>`;
-                    }
+                            `).join('')}
+                        </div>
+                        <div style="flex: 1; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid #444;">
+                            <h4 style="color:var(--yellow); margin-bottom:15px; font-size:14px;">🏆 발전 기록</h4>
+                            ${sortedByPower.map((p, idx) => `
+                                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px;">
+                                    <span>${idx+1}. ${p.name}</span>
+                                    <span style="color:var(--yellow)">${p.devScore}P</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
         
-                    endingContent.innerHTML = html;
-                    ending.style.display = 'flex';
-                }
+                    <div style="flex: 1; background: #1a1a1a; padding: 20px; border-radius: 12px; border: 2px solid var(--yellow); text-align: left; display: flex; flex-direction: column; justify-content: center;">
+                        <h3 style="color: var(--yellow); margin-bottom: 15px; font-size: 18px; border-bottom: 1px solid var(--yellow); padding-bottom: 5px;">🧐 우승자 판정 룰</h3>
+                        <ol style="color: #eee; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+                            <li>개발점수가 가장 높은 <b style="color:var(--red)">파괴왕(💀)</b>을 먼저 제외합니다.</li>
+                            <li>남은 사람 중 <b style="color:var(--yellow)">발전점수가 가장 높은 사람</b>이 우승!</li>
+                            <li>발전점수가 같으면 <b style="color:var(--blue)">파괴횟수가 적은 사람</b>이 승리합니다.</li>
+                            <li>모든 조건이 같으면 <b>공동 우승</b>입니다.</li>
+                        </ol>
+                        <p style="margin-top: 20px; font-weight: bold; color: var(--green); text-align: center; font-size: 16px;">
+                            과연 누가 진정한 승자일까요?
+                        </p>
+                    </div>
+        
+                </div>`;
+            }
+        
+            endingContent.innerHTML = html;
+            ending.style.display = 'flex';
+        }
         
     </script>
 </body>
