@@ -133,8 +133,9 @@
         #sidebar { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 25px; }
         .panel { background: var(--bg-secondary); border-radius: 20px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 
-        .rank-item { display: flex; align-items: center; background: var(--bg-tertiary); margin-bottom: 12px; padding: 15px; border-radius: 15px; border-left: 6px solid transparent; transition: 0.3s; }
+        .rank-item { display: flex; align-items: center; background: var(--bg-tertiary); margin-bottom: 12px; padding: 12px 15px; border-radius: 15px; border-left: 6px solid transparent; transition: 0.3s; }
         .rank-item.active { border-left-color: var(--text-white); background: #3b4259; transform: scale(1.02); }
+        .rank-info span { letter-spacing: -0.5px; }
         
         .rank-num { font-weight: bold; font-size: 18px; width: 30px; margin-right: 15px; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.2); border-radius: 50%; height: 30px; }
         .rank-info { flex: 1; }
@@ -314,10 +315,10 @@
     <script>
         // --- 게임 데이터 ---
         const players = [
-            { id: 1, name: "플레이어 1", color: "#fa5252", pos: 0, score: 0, lands: [], css: "p1-land" },
-            { id: 2, name: "플레이어 2", color: "#4c6ef5", pos: 0, score: 0, lands: [], css: "p2-land" },
-            { id: 3, name: "플레이어 3", color: "#40c057", pos: 0, score: 0, lands: [], css: "p3-land" },
-            { id: 4, name: "플레이어 4", color: "#be4bdb", pos: 0, score: 0, lands: [], css: "p4-land" }
+            { id: 1, name: "플레이어 1", color: "#fa5252", pos: 0, score: 0, devScore: 0, lands: [], css: "p1-land" },
+            { id: 2, name: "플레이어 2", color: "#4c6ef5", pos: 0, score: 0, devScore: 0, lands: [], css: "p2-land" },
+            { id: 3, name: "플레이어 3", color: "#40c057", pos: 0, score: 0, devScore: 0, lands: [], css: "p3-land" },
+            { id: 4, name: "플레이어 4", color: "#be4bdb", pos: 0, score: 0, devScore: 0, lands: [], css: "p4-land" }
         ];
 
         // 업데이트된 Map Data (id: 0~15)
@@ -525,30 +526,47 @@
         function updateRank() {
             const list = document.getElementById('rank-list');
             list.innerHTML = "";
-            let sorted = [...players].sort((a,b) => b.score - a.score || a.id - b.id);
+
+    // 1. 순위 정렬 기준: 개발을 많이 한 순서 (Bad Ending에 가까운 순)
+            let sorted = [...players].sort((a, b) => b.score - a.score || a.id - b.id);
+
             sorted.forEach((p, idx) => {
-                const isActive = (p.id === players[turn].id);
-                const div = document.createElement('div');
-                div.className = `rank-item ${isActive ? 'active' : ''}`;
+            const isActive = (p.id === players[turn].id);
+            const div = document.createElement('div');
+            div.className = `rank-item ${isActive ? 'active' : ''}`;
+        
+        // 발전 점수가 가장 높은 사람을 찾기 위한 로직 (보너스 표시용)
+            const isTopDev = p.devScore > 0 && p.devScore === Math.max(...players.map(pl => pl.devScore));
+
                 div.innerHTML = `
-                    <div class="rank-num" style="color:${p.color}">${idx+1}</div>
+                    <div class="rank-num" style="color:${p.color}">${idx + 1}</div>
                     <div class="rank-info">
-                        <div style="font-size:16px; font-weight:bold; display:flex; justify-content:space-between; margin-bottom:5px;">
-                            <span>${p.name}</span>
-                            <span style="color:${p.color}">${p.score}개</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <span style="font-size:16px; font-weight:bold;">${p.name}</span>
+                            <span style="color:${p.color}; font-weight:800; font-size:15px;">개발 ${p.score}개</span>
                         </div>
-                        <div class="rank-bar-bg">
-                            <div class="rank-bar-fill" style="width:${p.score * 5}%; background:${p.color}"></div>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div class="rank-bar-bg" style="flex:1; margin-top:0; margin-right:10px;">
+                                <div class="rank-bar-fill" style="width:${Math.min(p.score * 12, 100)}%; background:${p.color}"></div>
+                            </div>
+                            <span style="color:var(--yellow); font-size:13px; font-weight:bold; min-width:60px; text-align:right;">
+                                ${isTopDev ? '🏆 ' : ''}+${p.devScore}P
+                            </span>
                         </div>
                     </div>
                 `;
                 list.appendChild(div);
             });
+
+    // 현재 차례 표시
             const turnP = players[turn];
             const txt = document.getElementById('turn-txt');
             txt.innerText = `${turnP.name}의 차례`;
             txt.style.color = turnP.color;
         }
+        
+
 
         function rollDice() {
             const btn = document.getElementById('roll-btn');
@@ -606,14 +624,17 @@
         function decide(develop) {
             document.getElementById('game-modal').style.display = 'none';
             const p = players[turn];
+            const land = mapData[currentLandIdx]; // 현재 땅 데이터 가져오기
 
             if(develop) {
                 boardOwner[currentLandIdx] = p.id;
-                p.score++;
-                p.lands.push(mapData[currentLandIdx].name);
+                p.score++; // 개발 개수 +1
+                p.devScore += land.devValue; // 해당 국가의 발전 점수 합산 (+1P 또는 +2P)
+        
+                p.lands.push(land.name);
                 const tile = document.getElementById(`tile-${currentLandIdx}`);
                 tile.classList.add(p.css);
-                tile.querySelector('.name').innerHTML += "<br><span style='color:"+p.color+"; font-size:12px;'>(개발됨)</span>";
+                tile.querySelector('.name').innerHTML += `<br><span style='color:${p.color}; font-size:12px;'>(개발됨)</span>`;
             } 
             updateRank();
             nextTurn();
