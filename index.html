@@ -656,6 +656,15 @@
 
         let currentLandIdx = 0;
 
+        function openGameModal(idx) {
+            currentLandIdx = idx;
+            const data = mapData[idx];
+            document.getElementById('m-modal-flag').innerText = data.flag; // ID는 HTML 구조에 맞게 조정
+            document.getElementById('m-modal-title').innerText = data.name;
+            // ... 모달에 데이터를 넣고 display = 'flex' 하는 로직
+            document.getElementById('game-modal').style.display = 'flex';
+        }
+        
         function openMiniGame(idx) {
             currentLandIdx = idx; // 현재 분쟁이 발생한 땅 번호 고정
             const land = mapData[idx];
