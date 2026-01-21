@@ -674,6 +674,7 @@
         }
 
         function openMiniGame(idx) {
+            currentLandIdx = idx;
             const land = mapData[idx];
             const owner = players.find(p => p.id === boardOwner[idx]);
             const attacker = players[turn];
@@ -698,50 +699,48 @@
         
             document.getElementById('mini-game-modal').style.display = 'flex';
         }
-
+        
         function resolveMiniGame(owner, attacker, isOwnerWin) {
-            // 1. 현재 분쟁이 발생한 '그 땅'의 요소를 가져옵니다.
-            const tile = document.getElementById(`tile-${currentLandIdx}`);
+            // 현재 분쟁 중인 나라의 타일 엘리먼트를 정확히 가져옴
+            const targetTile = document.getElementById(`tile-${currentLandIdx}`);
             const land = mapData[currentLandIdx];
         
             if (isOwnerWin) {
-                // [점수 체계: 요청하신 그대로 유지]
+                // [점수 변동]
                 owner.devScore += 0.5;   
-                owner.score -= 1;        // 소유자는 이 땅(부채)을 떠넘김
-                
+                owner.score -= 1;        // 소유자 땅 하나 줄어듦
                 attacker.devScore -= 0.5; 
-                attacker.score += 1;      // 침입자가 이 땅(부채)을 떠맡음
+                attacker.score += 1;      // 침입자 땅 하나 늘어남
         
                 // [소유권 데이터 변경]
                 boardOwner[currentLandIdx] = attacker.id;
         
-                // [시각적 교체: 분쟁 지역 타일만 해당]
-                // 이 타일에 붙어있던 이전 주인의 색상(p1~p4)을 싹 지우고
-                tile.classList.remove('p1-land', 'p2-land', 'p3-land', 'p4-land');
-                // 침입자(진 사람)의 색상 클래스를 새로 입힙니다.
-                tile.classList.add(attacker.css);
+                // [시각적 교체] - targetTile(현재 분쟁지)만 수정
+                if (targetTile) {
+                    // 1. 기존의 모든 플레이어 색상 클래스 삭제
+                    targetTile.classList.remove('p1-land', 'p2-land', 'p3-land', 'p4-land');
+                    // 2. 패배한 침입자(attacker)의 색상 클래스 추가
+                    targetTile.classList.add(attacker.css);
+                    // 3. 텍스트 업데이트 (이름 + 소유권 이전 표시)
+                    targetTile.querySelector('.name').innerHTML = `
+                        ${land.name}<br>
+                        <span style='color:${attacker.color}; font-size:12px; font-weight:bold;'>(소유권 이전)</span>
+                    `;
+                }
         
-                // [텍스트 업데이트: 분쟁 지역 타일만 해당]
-                tile.querySelector('.name').innerHTML = `
-                    ${land.name}<br>
-                    <span style='color:${attacker.color}; font-size:12px; font-weight:bold;'>(소유권 이전)</span>
-                `;
-        
-                alert(`🎊 ${owner.name} 승리! 규제 준수 성공.\n개발권이 ${attacker.name}에게 강제 이전되었습니다.`);
-        
+                alert(`🎊 ${owner.name} 승리! 규제 준수 완료.\n${land.name}의 소유권이 ${attacker.name}에게 이전되었습니다.`);
             } else {
-                // 침입자 승리 시 (요청하신 대로 소유권 변동 없음)
+                // 침입자 승리 시 점수만 변동 (소유권 유지)
                 owner.devScore -= 0.5; 
                 attacker.devScore += 0.5; 
-                
-                alert(`🎊 ${attacker.name} 승리! 규제 싸움에서 우위를 점해 발전 점수를 획득했습니다.`);
+                alert(`🎊 ${attacker.name} 승리! 발전 점수를 획득했습니다.`);
             }
         
             document.getElementById('mini-game-modal').style.display = 'none';
-            updateRank(); // 순위 실시간 반영
-            nextTurn();   
+            updateRank();
+            nextTurn();
         }
-
+        
         function decide(develop) {
             document.getElementById('game-modal').style.display = 'none';
             const p = players[turn];
