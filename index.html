@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>두존구 - 채굴권 싸움</title>
+    <title>두존구 - 영토 대결판</title>
     <style>
-        /* --- 기존 스타일 유지 --- */
         :root {
             --bg-main: #1a1e2e;
             --bg-secondary: #252a3e;
@@ -14,206 +13,165 @@
             --text-gray: #a0aec0;
             --blue: #4c6ef5;
             --red: #fa5252;
-            --dark-red: #c92a2a;
             --green: #40c057;
             --yellow: #fcc419;
             --modal-bg: #1e2337;
-            --warning-bg: rgba(250, 82, 82, 0.08);
-            --info-bg: rgba(76, 110, 245, 0.08);
         }
 
         body {
-            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            font-family: 'Pretendard', sans-serif;
             background-color: var(--bg-main);
             color: var(--text-white);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow-x: hidden;
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
         }
 
-        button { font-family: 'Pretendard', sans-serif; }
-
-        /* --- 시작 화면 및 게임 UI 스타일 생략 (기존과 동일) --- */
-        #start-screen { display: flex; flex-direction: column; align-items: center; max-width: 500px; width: 90%; text-align: center; animation: fadeIn 1s ease-in-out; }
-        .start-logo { font-size: 80px; margin-bottom: 20px; animation: float 3s infinite ease-in-out; }
-        .game-title { font-size: 48px; font-weight: 800; margin: 0; letter-spacing: -1px; }
-        .game-subtitle { color: var(--text-gray); font-size: 16px; margin-top: 10px; margin-bottom: 50px; }
-        .start-warning-box { background: rgba(26, 30, 46, 0.8); border: 2px solid var(--red); border-radius: 15px; padding: 25px; margin-bottom: 20px; width: 100%; box-sizing: border-box; }
-        .rules-box { background: var(--bg-secondary); border-radius: 15px; padding: 25px; width: 100%; box-sizing: border-box; text-align: left; margin-bottom: 40px; }
-        .btn-start { width: 100%; padding: 20px; font-size: 20px; font-weight: 800; color: white; background: linear-gradient(135deg, #d93025, #b71c1c); border: none; border-radius: 15px; cursor: pointer; }
-        
         #game-ui { display: none; flex-direction: column; align-items: center; width: 100%; }
-        .game-container { display: flex; gap: 30px; width: 100%; max-width: 1200px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
-        #board-grid { flex: 2; min-width: 320px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-        .tile { background-color: var(--bg-secondary); border-radius: 16px; aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; border: 3px solid transparent; transition: 0.3s ease; cursor: pointer; }
-        .flag { font-size: 40px; margin-bottom: 10px; }
-        .name { font-size: 14px; font-weight: bold; text-align: center; }
-        .token-zone { position: absolute; bottom: 8px; display: flex; gap: 4px; }
-        .token { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--bg-secondary); }
-
-        /* 타일 소유권 색상 */
-        .p1-land { border-color: #fa5252 !important; background: rgba(250, 82, 82, 0.1) !important; }
-        .p2-land { border-color: #4c6ef5 !important; background: rgba(76, 110, 245, 0.1) !important; }
-        .p3-land { border-color: #40c057 !important; background: rgba(64, 192, 87, 0.1) !important; }
-        .p4-land { border-color: #be4bdb !important; background: rgba(190, 75, 219, 0.1) !important; }
-
-        #sidebar { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 25px; }
-        .panel { background: var(--bg-secondary); border-radius: 20px; padding: 25px; }
-        .rank-item { display: flex; align-items: center; background: var(--bg-tertiary); margin-bottom: 12px; padding: 15px; border-radius: 15px; }
-        .rank-bar-bg { width: 100%; height: 8px; background: #555; border-radius: 4px; margin-top: 8px; overflow: hidden; }
-        .rank-bar-fill { height: 100%; transition: width 0.6s; }
-
-        /* --- 모달 공통 스타일 --- */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--modal-bg); padding: 30px; border-radius: 25px; width: 90%; max-width: 500px; text-align: center; border: 2px solid var(--blue); }
-        .desc-box { border-radius: 15px; padding: 20px; margin-bottom: 25px; text-align: left; }
-        .warn-style { background: var(--warning-bg); border: 2px solid var(--red); }
-        .btn-yes { background: linear-gradient(135deg, #d93025, #b71c1c); color: white; width: 100%; padding: 18px; border:none; border-radius: 12px; font-weight:800; font-size: 20px; cursor: pointer; }
-
-        /* --- 채굴권 싸움 전용 스타일 --- */
-        .battle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .battle-btn { height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border-radius: 15px; border: 2px solid rgba(255,255,255,0.1); color: white; cursor: pointer; transition: 0.2s; }
-        .battle-btn:hover { transform: scale(1.05); border-color: white; }
-        .battle-info-text { font-size: 11px; opacity: 0.8; margin-top: 5px; line-height: 1.3; }
-
-        #ending { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 1000; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
-        .ending-img { width: 300px; max-width: 80%; border-radius: 15px; margin: 20px 0; }
+        .game-container { display: flex; gap: 30px; width: 100%; max-width: 1200px; justify-content: center; flex-wrap: wrap; }
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        #board-grid { flex: 2; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .tile { background-color: var(--bg-secondary); border-radius: 16px; aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; border: 3px solid transparent; transition: 0.3s; }
+        .flag { font-size: 36px; }
+        .name { font-size: 13px; font-weight: bold; text-align: center; margin-top: 4px; }
+        .adv-badge { font-size: 10px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px; margin-top: 4px; color: var(--yellow); }
+        .token-zone { position: absolute; bottom: 8px; display: flex; gap: 4px; }
+        .token { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #222; }
+
+        .p1-land { border-color: var(--red) !important; background: rgba(250, 82, 82, 0.1); }
+        .p2-land { border-color: var(--blue) !important; background: rgba(76, 110, 245, 0.1); }
+        .p3-land { border-color: var(--green) !important; background: rgba(64, 192, 87, 0.1); }
+        .p4-land { border-color: #be4bdb !important; background: rgba(190, 75, 219, 0.1); }
+
+        #sidebar { flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 20px; }
+        .panel { background: var(--bg-secondary); border-radius: 20px; padding: 20px; }
+        
+        .rank-item { background: var(--bg-tertiary); margin-bottom: 10px; padding: 15px; border-radius: 15px; border-left: 5px solid transparent; }
+        .rank-item.active { border-left-color: white; transform: scale(1.02); }
+        .score-info { font-size: 12px; color: var(--text-gray); display: flex; gap: 10px; margin-top: 5px; }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; }
+        .modal-content { background: var(--modal-bg); padding: 30px; border-radius: 25px; width: 95%; max-width: 600px; text-align: center; border: 2px solid var(--red); }
+
+        /* 대결 전용 레이아웃 */
+        .battle-layout { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 25px; }
+        .battle-player-zone { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .battle-btn { width: 100%; padding: 20px; border-radius: 15px; border: none; color: white; font-weight: 800; cursor: pointer; transition: 0.2s; }
+        .battle-btn:active { transform: scale(0.95); }
+        .center-reg-box { flex: 1.5; background: rgba(250, 82, 82, 0.1); padding: 15px; border: 1px dashed var(--red); border-radius: 15px; font-size: 14px; }
+
+        .btn-yes { background: #d93025; color: white; width: 100%; padding: 15px; border:none; border-radius: 12px; font-weight:bold; cursor: pointer; margin-top: 15px; }
+        .btn-no { background: transparent; color: var(--text-gray); border: 1px solid var(--text-gray); width: 100%; padding: 10px; border-radius: 12px; margin-top: 10px; cursor: pointer; }
+
+        #ending { display: none; position: fixed; inset: 0; background: black; z-index: 1000; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 20px; }
+        .ending-img { width: 300px; border-radius: 15px; margin: 20px; }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
-        <div class="start-logo">🌍</div>
-        <h1 class="game-title">두존구</h1>
-        <p class="game-subtitle">채굴권 싸움: 환경과 개발 사이의 치열한 선택</p>
-        <div class="start-warning-box">
-            <p class="warn-text">이미 개발된 지역에 도착하면 <span style="color:var(--yellow); font-weight:bold;">'채굴권 싸움'</span>이 시작됩니다.</p>
-        </div>
-        <button class="btn-start" onclick="startGame()">▷ 게임 시작</button>
+    <div id="start-screen" style="text-align: center; max-width: 500px;">
+        <h1 style="font-size: 50px; margin-bottom: 10px;">🌍 두존구</h1>
+        <p style="color:var(--text-gray)">모든 플레이어는 중국(0)에서 출발합니다.</p>
+        <button onclick="startGame()" style="width:100%; padding:20px; font-size:20px; background:var(--red); color:white; border:none; border-radius:15px; cursor:pointer; font-weight:bold;">게임 시작</button>
     </div>
 
     <div id="game-ui">
-        <header style="text-align: center; margin-bottom: 20px;">
-            <h1>🌍 두존구 🌍</h1>
-            <div id="round-txt" style="background: var(--bg-tertiary); padding: 8px 20px; border-radius: 25px; margin-top: 10px; display: inline-block;">ROUND 1 / 5</div>
-        </header>
+        <header style="margin-bottom: 20px;"><div id="round-txt" style="background: var(--bg-tertiary); padding: 5px 15px; border-radius: 20px;">ROUND 1 / 5</div></header>
+
         <div class="game-container">
             <div id="board-grid"></div>
             <div id="sidebar">
-                <div class="panel">
-                    <h3>📊 실시간 점수 순위</h3>
-                    <div id="rank-list"></div>
-                </div>
-                <div class="panel" style="text-align: center;">
-                    <h3 id="turn-txt">플레이어 1의 차례</h3>
-                    <div id="dice-val" style="font-size: 60px; margin: 20px 0;">🎲</div>
-                    <button id="roll-btn" onclick="rollDice()" style="width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">주사위 굴리기</button>
+                <div class="panel"><h3>📊 실시간 통합 순위</h3><div id="rank-list"></div></div>
+                <div class="panel" style="text-align:center">
+                    <h3 id="turn-txt">차례</h3><div id="dice-val" style="font-size: 50px; margin: 10px;">🎲</div>
+                    <button id="roll-btn" onclick="rollDice()" style="width:100%; padding:15px; border-radius:10px; background:var(--blue); color:white; border:none; font-weight:bold; cursor:pointer;">주사위 던지기</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="game-modal" class="modal-overlay">
-        <div class="modal-content" style="border-color: var(--red);">
-            <div id="g-modal-flag" style="font-size: 60px;"></div>
-            <h2 id="g-modal-title" style="font-size: 32px; margin: 10px 0;"></h2>
-            <div class="desc-box warn-style">
-                <p id="g-modal-warning" style="font-size: 14px; margin-bottom: 10px;"></p>
-                <hr style="opacity: 0.1; margin: 10px 0;">
-                <p id="g-modal-regulation" style="font-size: 14px; color: var(--yellow);"></p>
+        <div class="modal-content">
+            <div id="g-modal-flag" style="font-size:50px"></div>
+            <h2 id="g-modal-title">국가명</h2>
+            <div id="g-modal-adv-info" class="adv-badge" style="display:inline-block; font-size:14px; padding:5px 15px; margin-bottom:10px;">발전점수 +1</div>
+            <p id="g-modal-msg" style="color:var(--blue); font-weight:bold;"></p>
+            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; text-align:left; font-size:14px; margin:15px 0;">
+                <p><strong>⚠️ 규제:</strong> <span id="g-modal-reg"></span></p>
+                <p><strong>⚡ 영향:</strong> <span id="g-modal-warn"></span></p>
             </div>
-            <button class="btn-yes" onclick="decide(true)">⚡ 이 곳의 채굴권을 가질까요?</button>
-            <button onclick="decide(false)" style="background:none; color:var(--text-gray); border:none; margin-top:15px; cursor:pointer;">보존하기 (점수 없음)</button>
+            <button class="btn-yes" onclick="decide(true)">이 곳을 개발하겠습니다</button>
+            <button class="btn-no" onclick="decide(false)">보존하겠습니다</button>
         </div>
     </div>
 
     <div id="battle-modal" class="modal-overlay">
-        <div class="modal-content" style="border-color: var(--yellow); max-width: 550px;">
-            <h2 style="color: var(--yellow); font-size: 28px; margin-bottom: 5px;">⚔️ 채굴권 싸움 발생!</h2>
-            <p id="battle-desc" style="font-size: 14px; margin-bottom: 20px;"></p>
+        <div class="modal-content" style="border-color: var(--yellow); max-width: 700px;">
+            <h2 style="color:var(--yellow); margin:0;">⚔️ 영토 쟁탈 대결 ⚔️</h2>
+            <p style="margin-top:5px; color:#aaa;">먼저 클릭하는 쪽이 승리 확률이 높습니다!</p>
             
-            <div class="battle-grid">
-                <button id="btn-owner-win" class="battle-btn">
-                    <span style="font-weight: bold; font-size: 18px;">방어자 승리</span>
-                    <div class="battle-info-text">
-                        방어자: +0.5점 / 채굴권 상실<br>
-                        침입자: -0.5점 / 채굴권 획득
-                    </div>
-                </button>
-                <button id="btn-attacker-win" class="battle-btn">
-                    <span style="font-weight: bold; font-size: 18px;">침입자 승리</span>
-                    <div class="battle-info-text">
-                        침입자: +0.5점 / 채굴권 유지(+0)<br>
-                        방어자: -0.5점 / 채굴권 유지(+0)
-                    </div>
-                </button>
-            </div>
-            <p style="font-size: 12px; color: var(--text-gray); margin-top: 20px;">* 규제 퀴즈를 맞힌 플레이어를 선택하세요!</p>
-        </div>
-    </div>
+            <div class="battle-layout">
+                <div class="battle-player-zone">
+                    <div style="font-size:12px; color:var(--text-gray)">소유한 플레이어</div>
+                    <div id="owner-name" style="font-weight:bold; font-size:18px;"></div>
+                    <button id="owner-btn" class="battle-btn" onclick="processBattle('owner')">방어하기!</button>
+                </div>
 
-    <div id="info-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div id="i-modal-flag" style="font-size: 50px;"></div>
-            <h2 id="i-modal-title"></h2>
-            <p id="i-modal-regulation" style="text-align: left; font-size: 14px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;"></p>
-            <button onclick="closeInfo()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">닫기</button>
+                <div class="center-reg-box">
+                    <div id="battle-country" style="font-weight:bold; font-size:18px; margin-bottom:10px;"></div>
+                    <div id="battle-reg" style="font-size:13px; color:#eee;"></div>
+                </div>
+
+                <div class="battle-player-zone">
+                    <div style="font-size:12px; color:var(--text-gray)">침입한 플레이어</div>
+                    <div id="attacker-name" style="font-weight:bold; font-size:18px;"></div>
+                    <button id="attacker-btn" class="battle-btn" onclick="processBattle('attacker')">공격하기!</button>
+                </div>
+            </div>
+
+            <div id="battle-result-txt" style="margin-top:20px; font-size:18px; font-weight:bold; min-height:50px;"></div>
+            <button id="battle-close-btn" class="btn-no" style="display:none; border-color:var(--yellow); color:var(--yellow);" onclick="closeBattle()">결과 확인 완료</button>
         </div>
     </div>
 
     <div id="ending">
         <div id="ending-content"></div>
-        <button onclick="location.reload()" style="margin-top:30px; padding:10px 20px; cursor:pointer;">다시 시작하기</button>
+        <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; cursor:pointer">처음으로</button>
     </div>
 
     <script>
-        /* --- 데이터 설정 --- */
         const players = [
-            { id: 1, name: "플레이어 1", color: "#fa5252", pos: 0, score: 0, lands: [], css: "p1-land" },
-            { id: 2, name: "플레이어 2", color: "#4c6ef5", pos: 0, score: 0, lands: [], css: "p2-land" },
-            { id: 3, name: "플레이어 3", color: "#40c057", pos: 0, score: 0, lands: [], css: "p3-land" },
-            { id: 4, name: "플레이어 4", color: "#be4bdb", pos: 0, score: 0, lands: [], css: "p4-land" }
+            { id: 1, name: "플레이어 1", color: "#fa5252", pos: 0, devScore: 0, advScore: 0, totalScore: 0, lands: [], css: "p1-land" },
+            { id: 2, name: "플레이어 2", color: "#4c6ef5", pos: 0, devScore: 0, advScore: 0, totalScore: 0, lands: [], css: "p2-land" },
+            { id: 3, name: "플레이어 3", color: "#40c057", pos: 0, devScore: 0, advScore: 0, totalScore: 0, lands: [], css: "p3-land" },
+            { id: 4, name: "플레이어 4", color: "#be4bdb", pos: 0, devScore: 0, advScore: 0, totalScore: 0, lands: [], css: "p4-land" }
         ];
 
         const mapData = [
-            { id: 0, name: "중국", flag: "🇨🇳", regulation: "희토류 수출 통제", warning: "국제 공급망 붕괴 및 외교적 갈등" },
-            { id: 1, name: "미국", flag: "🇺🇸", regulation: "지하수 관리 규제", warning: "지하수 고갈 및 지역 주민 식수 위기" },
-            { id: 2, name: "EU", flag: "🇪🇺", regulation: "순환경제 규제", warning: "그린워싱 소송 및 시장 퇴출" },
-            { id: 3, name: "일본", flag: "🇯🇵", regulation: "수산 자원 관리법", warning: "어종 고갈 및 해양 생태계 파괴" },
-            { id: 4, name: "베트남", flag: "🇻🇳", regulation: "광산지침 강화", warning: "토지 황폐화 및 불법 채굴 확산" },
-            { id: 5, name: "차드", flag: "🇹🇩", regulation: "개정 광업법", warning: "단기 수익 위주 개발로 인한 자원의 저주" },
-            { id: 6, name: "나우루", flag: "🇳🇷", regulation: "심해채굴 규제 요청", warning: "심해 생태계의 영구적 손상" },
-            { id: 7, name: "부산", flag: "🇰🇷", regulation: "골재 채취법", warning: "해양 침식 및 홍수 재해 위험 증가" },
-            { id: 8, name: "칠레", flag: "🇨🇱", regulation: "염호 보호구역 지정", warning: "염수 과잉 추출로 인한 생물 멸종" },
-            { id: 9, name: "아르헨티나", flag: "🇦🇷", regulation: "투자 인세티브 조항", warning: "식수 부족 및 습지 소멸" },
-            { id: 10, name: "인도네시아", flag: "🇮🇩", regulation: "환경영향평가 완화", warning: "열대우림 훼손 및 해양 오염" },
-            { id: 11, name: "캐나다", flag: "🇨🇦", regulation: "광산 환경 책임 강화", warning: "중금속 축적 및 주민 건강 악화" },
-            { id: 12, name: "서울", flag: "🇰🇷", regulation: "국가자원안보법", warning: "핵심 자원 공급 중단 시 산업 마비" },
-            { id: 13, name: "대만", flag: "🇹🇼", regulation: "에너지 수자원 관리", warning: "가뭄 시 반도체 생산 중단" },
-            { id: 14, name: "호주", flag: "🇦🇺", regulation: "원주민 유산 보호", warning: "사회적 갈등 및 프로젝트 중단" },
-            { id: 15, name: "브라질", flag: "🇧🇷", regulation: "아마존 개발 제한", warning: "기후 재앙 초래 및 국제 제재" }
+            { id: 0, name: "중국", flag: "🇨🇳", point: 1, reg: "수출 통제", warn: "공급망 붕괴" },
+            { id: 1, name: "미국", flag: "🇺🇸", point: 1, reg: "지하수 규제", warn: "식수 위기" },
+            { id: 2, name: "EU", flag: "🇪🇺", point: 1, reg: "순환경제 지침", warn: "시장 퇴출" },
+            { id: 3, name: "일본", flag: "🇯🇵", point: 1, reg: "남획 규제", warn: "수산자원 고갈" },
+            { id: 4, name: "베트남", flag: "🇻🇳", point: 2, reg: "광산지침", warn: "토지 황폐화" },
+            { id: 5, name: "차드", flag: "🇹🇩", point: 2, reg: "개정 광업법", warn: "자원 저주" },
+            { id: 6, name: "나우루", flag: "🇳🇷", point: 2, reg: "심해채굴 금지", warn: "해양 파괴" },
+            { id: 7, name: "부산", flag: "🇰🇷", point: 1, reg: "골재 채취법", warn: "해안 침식" },
+            { id: 8, name: "칠레", flag: "🇨🇱", point: 2, reg: "염호 보호", warn: "생물 멸종" },
+            { id: 9, name: "아르헨티나", flag: "🇦🇷", point: 2, reg: "투자 인센티브", warn: "습지 소멸" },
+            { id: 10, name: "인도네시아", flag: "🇮🇩", point: 2, reg: "환경평가 완화", warn: "열대우림 파괴" },
+            { id: 11, name: "캐나다", flag: "🇨🇦", point: 1, reg: "환경 책임 강화", warn: "토양 오염" },
+            { id: 12, name: "서울", flag: "🇰🇷", point: 1, reg: "자원안보법", warn: "에너지 마비" },
+            { id: 13, name: "대만", flag: "🇹🇼", point: 1, reg: "수자원 관리", warn: "반도체 중단" },
+            { id: 14, name: "호주", flag: "🇦🇺", point: 1, reg: "원주민 유산보호", warn: "사회 갈등" },
+            { id: 15, name: "브라질", flag: "🇧🇷", point: 2, reg: "산림법", warn: "기후 재앙" }
         ];
 
-        let turn = 0;
-        let round = 1;
-        const maxRound = 5;
-        let boardOwner = new Array(16).fill(0); // 0: 주인 없음, 1~4: 플레이어 ID
+        let turn = 0; let round = 1; const maxRound = 5;
+        let boardOwner = new Array(16).fill(null);
 
-        /* --- 게임 엔진 --- */
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('game-ui').style.display = 'flex';
-            const startPositions = [0, 12, 8, 4];
-            players.forEach((p, idx) => p.pos = startPositions[idx]);
-            drawBoard();
-            updateRank();
+            drawBoard(); updateRank();
         }
 
         function drawBoard() {
@@ -221,194 +179,150 @@
             grid.innerHTML = "";
             mapData.forEach((data, i) => {
                 const div = document.createElement('div');
-                div.className = "tile";
-                div.id = `tile-${i}`;
-                div.onclick = () => showInfo(i);
-                div.innerHTML = `<div class="flag">${data.flag}</div><div class="name">${data.name}</div><div class="token-zone" id="zone-${i}"></div>`;
+                div.className = "tile"; div.id = `tile-${i}`;
+                div.innerHTML = `
+                    <div class="flag">${data.flag}</div>
+                    <div class="name">${data.name}</div>
+                    <div class="adv-badge">발전 +${data.point}</div>
+                    <div class="token-zone" id="zone-${i}"></div>
+                `;
                 grid.appendChild(div);
             });
             drawTokens();
         }
 
         function drawTokens() {
-            document.querySelectorAll('.token').forEach(e => e.remove());
+            document.querySelectorAll('.token').forEach(t => t.remove());
             players.forEach(p => {
                 const zone = document.getElementById(`zone-${p.pos}`);
-                if(zone) {
-                    const t = document.createElement('div');
-                    t.className = "token";
-                    t.style.backgroundColor = p.color;
-                    zone.appendChild(t);
-                }
+                const t = document.createElement('div');
+                t.className = "token"; t.style.backgroundColor = p.color;
+                zone.appendChild(t);
             });
         }
 
         function updateRank() {
-            const list = document.getElementById('rank-list');
-            list.innerHTML = "";
-            let sorted = [...players].sort((a,b) => b.score - a.score);
+            players.forEach(p => p.totalScore = p.devScore + p.advScore);
+            const sorted = [...players].sort((a,b) => b.totalScore - a.totalScore);
+            const list = document.getElementById('rank-list'); list.innerHTML = "";
             sorted.forEach((p, idx) => {
-                const isActive = (p.id === players[turn].id);
-                list.innerHTML += `
-                    <div class="rank-item" style="${isActive ? 'border-left: 5px solid white; background:#3b4259;' : ''}">
-                        <div style="flex:1">
-                            <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                                <span>${p.name}</span><span>${p.score.toFixed(1)}점</span>
-                            </div>
-                            <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${p.score * 10}%; background:${p.color}"></div></div>
-                        </div>
-                    </div>`;
+                list.innerHTML += `<div class="rank-item ${p.id===players[turn].id?'active':''}">
+                    <div style="font-weight:bold; display:flex; justify-content:space-between;">
+                        <span>${idx+1}위 ${p.name}</span><span>${p.totalScore}점</span>
+                    </div>
+                    <div class="score-info"><span>🛠 개발:${p.devScore}</span><span>⚡ 발전:${p.advScore}</span></div>
+                </div>`;
             });
             document.getElementById('turn-txt').innerText = `${players[turn].name}의 차례`;
             document.getElementById('turn-txt').style.color = players[turn].color;
         }
 
         function rollDice() {
-            const btn = document.getElementById('roll-btn');
-            btn.disabled = true;
-            const val = Math.floor(Math.random() * 6) + 1;
-            document.getElementById('dice-val').innerText = "🎲 " + val;
-            setTimeout(() => movePlayer(val), 600);
+            document.getElementById('roll-btn').disabled = true;
+            let val = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('dice-val').innerText = `🎲 ${val}`;
+            setTimeout(() => {
+                players[turn].pos = (players[turn].pos + val) % 16;
+                drawTokens();
+                setTimeout(() => {
+                    const owner = boardOwner[players[turn].pos];
+                    if (owner && owner.id !== players[turn].id) openBattleModal(owner, players[turn], players[turn].pos);
+                    else if (owner && owner.id === players[turn].id) { alert("본인 영토입니다."); nextTurn(); }
+                    else openModal(players[turn].pos);
+                }, 500);
+            }, 600);
         }
 
-        function movePlayer(steps) {
-            const p = players[turn];
-            p.pos = (p.pos + steps) % 16;
-            drawTokens();
-            setTimeout(() => checkLand(p.pos), 500);
-        }
-
-        /* --- 채굴권 싸움 로직 (핵심) --- */
-        function checkLand(idx) {
-            const ownerId = boardOwner[idx];
-            const currentPlayer = players[turn];
-
-            if(ownerId !== 0 && ownerId !== currentPlayer.id) {
-                // 채굴권 싸움 시작
-                openBattleModal(idx, ownerId);
-            } else if (ownerId === currentPlayer.id) {
-                // 본인 땅은 통과
-                nextTurn();
-            } else {
-                // 주인 없는 땅 개발
-                openGameModal(idx);
-            }
-        }
-
-        function openBattleModal(idx, ownerId) {
-            const land = mapData[idx];
-            const owner = players.find(p => p.id === ownerId);
-            const attacker = players[turn];
-
-            document.getElementById('battle-desc').innerHTML = `
-                <span style="color:${attacker.color}">${attacker.name}</span>이(가) 
-                <span style="color:${owner.color}">${owner.name}</span>의 <b>${land.name}</b> 채굴지에 진입했습니다!
-            `;
+        // --- 배틀 로직 ---
+        let currentBattleInfo = null;
+        function openBattleModal(owner, attacker, idx) {
+            currentBattleInfo = { owner, attacker, idx };
+            document.getElementById('owner-name').innerText = owner.name;
+            document.getElementById('owner-btn').style.backgroundColor = owner.color;
+            document.getElementById('attacker-name').innerText = attacker.name;
+            document.getElementById('attacker-btn').style.backgroundColor = attacker.color;
+            document.getElementById('battle-country').innerText = `${mapData[idx].flag} ${mapData[idx].name}`;
+            document.getElementById('battle-reg').innerText = `규제: ${mapData[idx].reg}`;
             
-            // 버튼 스타일 설정
-            const btnOwner = document.getElementById('btn-owner-win');
-            const btnAttacker = document.getElementById('btn-attacker-win');
-            
-            btnOwner.style.backgroundColor = owner.color;
-            btnAttacker.style.backgroundColor = attacker.color;
-
-            // 이벤트 바인딩
-            btnOwner.onclick = () => handleBattleResult("owner", idx, owner, attacker);
-            btnAttacker.onclick = () => handleBattleResult("attacker", idx, owner, attacker);
-
+            document.getElementById('battle-result-txt').innerText = "전투 준비! 버튼을 누르세요!";
+            document.getElementById('battle-close-btn').style.display = 'none';
+            document.getElementById('owner-btn').disabled = false;
+            document.getElementById('attacker-btn').disabled = false;
             document.getElementById('battle-modal').style.display = 'flex';
         }
 
-        function handleBattleResult(winner, idx, owner, attacker) {
-            if(winner === "owner") {
-                // 방어자 승리 시: 방어자 +0.5(가점) & 땅 뺏김 / 침입자 -0.5(감점) & 땅 얻음
-                owner.score += 0.5;
-                owner.lands = owner.lands.filter(l => l !== mapData[idx].name);
-                
-                attacker.score = Math.max(0, attacker.score - 0.5);
-                attacker.lands.push(mapData[idx].name);
-                
-                boardOwner[idx] = attacker.id;
-                updateTileUI(idx, attacker);
-            } else {
-                // 침입자 승리 시: 침입자 +0.5 / 방어자 -0.5 / 소유권 변동 없음(+0)
-                attacker.score += 0.5;
-                owner.score = Math.max(0, owner.score - 0.5);
-            }
+        function processBattle(clickedRole) {
+            document.getElementById('owner-btn').disabled = true;
+            document.getElementById('attacker-btn').disabled = true;
             
+            const { owner, attacker, idx } = currentBattleInfo;
+            const isOwnerWin = (clickedRole === 'owner') ? Math.random() < 0.7 : Math.random() < 0.3; // 클릭한 쪽이 확률 높음
+
+            const resTxt = document.getElementById('battle-result-txt');
+            if (isOwnerWin) {
+                resTxt.innerHTML = `<span style="color:var(--green)">🏆 ${owner.name} 방어 성공!</span><br><span style="font-size:14px;">소유자 +0.5 / 침입자 -0.5</span>`;
+                owner.advScore += 0.5; attacker.advScore -= 0.5;
+            } else {
+                resTxt.innerHTML = `<span style="color:var(--red)">🔥 ${attacker.name} 쟁탈 성공!</span><br><span style="font-size:14px;">소유자 -0.5 / 침입자 +0.5 / 영토 교체</span>`;
+                owner.advScore -= 0.5; owner.devScore -= 1;
+                attacker.advScore += 0.5; attacker.devScore += 1;
+                boardOwner[idx] = attacker;
+                const tile = document.getElementById(`tile-${idx}`);
+                tile.className = `tile ${attacker.css}`;
+                tile.querySelector('.name').innerHTML = `${mapData[idx].name}<br><span style="color:${attacker.color}; font-size:10px;">(뺏김)</span>`;
+            }
+            document.getElementById('battle-close-btn').style.display = 'block';
+        }
+
+        function closeBattle() {
             document.getElementById('battle-modal').style.display = 'none';
-            updateRank();
             nextTurn();
         }
 
-        /* --- UI 업데이트 보조 --- */
-        function updateTileUI(idx, newOwner) {
-            const tile = document.getElementById(`tile-${idx}`);
-            players.forEach(p => tile.classList.remove(p.css));
-            tile.classList.add(newOwner.css);
-            tile.querySelector('.name').innerHTML = `${mapData[idx].name}<br><span style="color:${newOwner.color}; font-size:10px;">(채굴권 이전)</span>`;
-        }
-
-        /* --- 기존 로직 (개발 및 턴관리) --- */
-        let currentIdx = -1;
-        function openGameModal(idx) {
-            currentIdx = idx;
-            const data = mapData[idx];
+        // --- 개발 로직 ---
+        let currentLandIdx = -1;
+        function openModal(idx) {
+            currentLandIdx = idx; const data = mapData[idx];
             document.getElementById('g-modal-flag').innerText = data.flag;
             document.getElementById('g-modal-title').innerText = data.name;
-            document.getElementById('g-modal-warning').innerText = "⚠️ " + data.warning;
-            document.getElementById('g-modal-regulation').innerText = "📌 " + data.regulation;
+            document.getElementById('g-modal-adv-info').innerText = `발전점수 +${data.point}`;
+            document.getElementById('g-modal-msg').innerText = `${players[turn].name}님, 개발하시겠습니까?`;
+            document.getElementById('g-modal-reg').innerText = data.reg;
+            document.getElementById('g-modal-warn').innerText = data.warn;
             document.getElementById('game-modal').style.display = 'flex';
         }
 
-        function decide(develop) {
-            const p = players[turn];
-            if(develop) {
-                boardOwner[currentIdx] = p.id;
-                p.score += 1;
-                p.lands.push(mapData[currentIdx].name);
-                updateTileUI(currentIdx, p);
-            }
+        function decide(isYes) {
             document.getElementById('game-modal').style.display = 'none';
+            if (isYes) {
+                const p = players[turn]; const land = mapData[currentLandIdx];
+                boardOwner[currentLandIdx] = p; p.devScore += 1; p.advScore += land.point;
+                const tile = document.getElementById(`tile-${currentLandIdx}`);
+                tile.classList.add(p.css);
+                tile.querySelector('.name').innerHTML += `<br><span style="color:${p.color}; font-size:10px;">(개발됨)</span>`;
+            }
             nextTurn();
         }
 
         function nextTurn() {
             turn++;
-            if(turn >= 4) {
-                turn = 0;
-                round++;
-                if(round > maxRound) { gameOver(); return; }
+            if (turn >= 4) {
+                turn = 0; round++;
+                if (round > maxRound) { showEnding(); return; }
                 document.getElementById('round-txt').innerText = `ROUND ${round} / ${maxRound}`;
             }
-            updateRank();
-            document.getElementById('roll-btn').disabled = false;
+            updateRank(); document.getElementById('roll-btn').disabled = false;
         }
 
-        function showInfo(idx) {
-            if(document.getElementById('game-modal').style.display === 'flex') return;
-            const data = mapData[idx];
-            document.getElementById('i-modal-flag').innerText = data.flag;
-            document.getElementById('i-modal-title').innerText = data.name;
-            document.getElementById('i-modal-regulation').innerText = data.regulation + "\n\n" + data.warning;
-            document.getElementById('info-modal').style.display = 'flex';
-        }
-
-        function closeInfo() { document.getElementById('info-modal').style.display = 'none'; }
-
-        function gameOver() {
-            const ending = document.getElementById('ending');
-            const content = document.getElementById('ending-content');
-            let winners = [...players].sort((a,b) => b.score - a.score);
-            content.innerHTML = `
-                <h1 style="color:var(--red)">게임 종료</h1>
-                <p>최종 우승: <span style="color:${winners[0].color}">${winners[0].name}</span></p>
-                <div style="margin: 20px 0; font-size: 14px; color:#ccc;">
-                    ${players.map(p => `${p.name}: ${p.score.toFixed(1)}점`).join('<br>')}
-                </div>
-                <p style="color:var(--yellow)">무분별한 채굴로 지구가 파괴되었습니다.</p>
-            `;
-            ending.style.display = 'flex';
+        function showEnding() {
+            const end = document.getElementById('ending');
+            const totalLands = boardOwner.filter(x => x !== null).length;
+            const winner = [...players].sort((a,b) => b.totalScore - a.totalScore)[0];
+            let html = totalLands === 0 ? 
+                `<h1>🌿 HAPPY ENDING</h1><img src="good.jpeg" class="ending-img"><p>지구가 보존되었습니다!</p>` :
+                `<h1>💀 BAD ENDING</h1><img src="bad.jpeg" class="ending-img"><p>우승: <b style="color:${winner.color}">${winner.name}</b> (${winner.totalScore}점)</p><p style="color:var(--red)">총 ${totalLands}개 지역 파괴</p>`;
+            document.getElementById('ending-content').innerHTML = html;
+            end.style.display = 'flex';
         }
     </script>
 </body>
