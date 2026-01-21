@@ -520,7 +520,7 @@
 
         let turn = 0; 
         let round = 1;
-        const maxRound = 5;
+        const maxRound = 6;
         let boardOwner = new Array(16).fill(0);
 
         function startGame() {
@@ -654,7 +654,7 @@
             }
         }
 
-        let currentLandIdx = -1;
+        let currentLandIdx = 0;
 
         function openMiniGame(idx) {
             currentLandIdx = idx; // 현재 분쟁이 발생한 땅 번호 고정
