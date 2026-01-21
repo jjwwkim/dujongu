@@ -336,6 +336,31 @@
         <button onclick="location.reload()" style="margin-top:40px; padding:15px 30px; background:#333; color:white; border:1px solid #555; border-radius: 10px; cursor: pointer;">처음으로 돌아가기</button>
     </div>
 
+    <div id="mini-game-modal" class="modal-overlay">
+        <div class="modal-content" style="border: 2px solid var(--yellow);">
+            <div class="modal-flag" id="m-modal-flag">🚩</div>
+            <h2 class="modal-title" id="m-modal-title">개발권 쟁탈전</h2>
+            <p id="m-modal-desc" style="color:var(--text-gray); margin-bottom:20px;">이 지역의 규제 정책을 두고 싸움이 일어났습니다!</p>
+    
+            <div class="desc-box info-style">
+                <div class="box-header" style="color:var(--yellow)">📜 해당 지역 규제 복기</div>
+                <p class="modal-desc-text" id="m-modal-regulation" style="font-weight:bold;"></p>
+            </div>
+    
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <div style="flex:1;">
+                    <p style="font-size:12px; color:var(--text-gray); margin-bottom:5px;">기존 소유자</p>
+                    <button id="btn-owner-win" class="btn-yes" style="font-size:16px; padding:15px 5px;">플레이어1 승리</button>
+                </div>
+                <div style="flex:1;">
+                    <p style="font-size:12px; color:var(--text-gray); margin-bottom:5px;">새로운 침입자</p>
+                    <button id="btn-attacker-win" class="btn-yes" style="font-size:16px; padding:15px 5px; background:linear-gradient(135deg, var(--blue), #364fc7); box-shadow: 0 5px 15px rgba(76,110,245,0.4);">플레이어2 승리</button>
+                </div>
+            </div>
+            <p style="margin-top:15px; font-size:12px; color:var(--text-gray);">* 암기 미니게임 승자를 클릭하세요.</p>
+        </div>
+    </div>
+
     <script>
         // --- 게임 데이터 ---
         const players = [
@@ -614,11 +639,17 @@
         }
 
         function checkLand(idx) {
-            if(boardOwner[idx] !== 0) {
-                const owner = players.find(p => p.id === boardOwner[idx]);
-                alert(`이미 ${owner.name}님이 개발하여 파괴된 지역입니다.`);
+            // 1. 주인이 있고, 그 주인이 현재 내(turn)가 아닐 때 -> 미니게임 발생!
+            if (boardOwner[idx] !== 0 && boardOwner[idx] !== players[turn].id) {
+                openMiniGame(idx); 
+            } 
+            // 2. 주인이 나일 때 -> "내 땅이다" 알림 후 종료
+            else if (boardOwner[idx] === players[turn].id) {
+                alert("나의 개발 지역에 다시 방문했습니다. 환경 규제를 점검합니다.");
                 nextTurn();
-            } else {
+            } 
+            // 3. 아무도 없는 빈 땅일 때 -> 일반 개발 모달 오픈
+            else {
                 openGameModal(idx);
             }
         }
@@ -640,6 +671,56 @@
             document.getElementById('g-modal-regulation').innerText = data.regulation;
             
             document.getElementById('game-modal').style.display = 'flex';
+        }
+
+        function openMiniGame(idx) {
+            const land = mapData[idx];
+            const owner = players.find(p => p.id === boardOwner[idx]);
+            const attacker = players[turn];
+        
+            // 모달 데이터 세팅
+            document.getElementById('m-modal-flag').innerText = land.flag;
+            document.getElementById('m-modal-title').innerText = `${land.name} 개발권 분쟁`;
+            document.getElementById('m-modal-regulation').innerText = land.regulation;
+        
+            const ownerBtn = document.getElementById('btn-owner-win');
+            const attackerBtn = document.getElementById('btn-attacker-win');
+        
+            ownerBtn.innerText = `${owner.name} 승리`;
+            ownerBtn.style.background = `linear-gradient(135deg, ${owner.color}, #000)`;
+            
+            attackerBtn.innerText = `${attacker.name} 승리`;
+            attackerBtn.style.background = `linear-gradient(135deg, ${attacker.color}, #000)`;
+        
+            // 버튼 클릭 이벤트 바인딩
+            ownerBtn.onclick = () => resolveMiniGame(owner, attacker, true); // 소유자 승리
+            attackerBtn.onclick = () => resolveMiniGame(owner, attacker, false); // 침입자 승리
+        
+            document.getElementById('mini-game-modal').style.display = 'flex';
+        }
+        
+        function resolveMiniGame(owner, attacker, isOwnerWin) {
+            if (isOwnerWin) {
+                // 1. 기존 소유자 승리 시
+                owner.devScore += 0.5; // 발전 +0.5
+                owner.score -= 1;      // 개발 -1
+                
+                attacker.devScore -= 0.5; // 패배자 발전 -0.5
+                attacker.score += 1;      // 패배자 개발 +1
+                alert(`소유자 ${owner.name} 승리! 규제를 잘 지켜 보상을 얻고 개발 지수를 낮췄습니다.`);
+            } else {
+                // 2. 침입자 승리 시
+                owner.devScore -= 0.5; // 패배자 발전 -0.5
+                owner.score += 0;      // 개발 변동없음 (+0)
+                
+                attacker.devScore += 0.5; // 승리자 발전 +0.5
+                attacker.score += 0;      // 개발 변동없음 (+0)
+                alert(`침입자 ${attacker.name} 승리! 개발권을 방어하지 못해 점수가 변동되었습니다.`);
+            }
+        
+            document.getElementById('mini-game-modal').style.display = 'none';
+            updateRank();
+            nextTurn();
         }
 
         function decide(develop) {
